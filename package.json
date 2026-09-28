@@ -1,0 +1,24 @@
+{
+  "name": "smart-society-platform",
+  "version": "1.0.0",
+  "description": "Smart Society Management & Collective Service Procurement Platform",
+  "scripts": {
+    "server": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev",
+    "client": "npm --prefix client run dev",
+    "seed": "npm --prefix server run db:seed",
+    "db:push": "npm --prefix server run db:push",
+    "build": "npm --prefix client run build"
+  },
+  "keywords": [
+    "smart-society",
+    "demand-aggregation",
+    "bulk-procurement",
+    "react",
+    "express",
+    "prisma",
+    "sqlite"
+  ],
+  "author": "Google DeepMind pair programmer",
+  "license": "ISC"
+}

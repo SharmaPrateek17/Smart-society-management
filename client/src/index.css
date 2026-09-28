@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #FAF7F0;
+  --color-ink: #272221;
+  --color-brand: #1D7753;
+  --color-brand-foreground: #FAF7F0;
+  --color-signal: #F08C1E;
+  --color-signal-foreground: #272221;
+  --font-display: "Bricolage Grotesque", sans-serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+:root {
+  --color-cream: #FAF7F0;
+  --color-ink: #272221;
+  --color-brand: #1D7753;
+  --color-brand-foreground: #FAF7F0;
+  --color-signal: #F08C1E;
+  --color-signal-foreground: #272221;
+}
+
+body {
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+  padding: 0;
+}
+
+h1, h2, h3, h4, .font-display {
+  font-family: 'Bricolage Grotesque', sans-serif;
+}
+
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rise {
+  animation: rise 0.35s ease-out forwards;
+}
+
+/* Custom scrollbar matching neo-brutalist theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FAF7F0;
+}
+::-webkit-scrollbar-thumb {
+  background: #272221;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #1D7753;
+}

@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  phone        String?
+  role         String    // RESIDENT, ADMIN, VENDOR, SUPER_ADMIN
+  societyId    String?
+  flatNumber   String?
+  createdAt    DateTime  @default(now())
+
+  society              Society?          @relation("SocietyMembers", fields: [societyId], references: [id])
+  administeredSociety  Society?          @relation("SocietyAdmin")
+  vendorProfile        Vendor?
+  serviceRequests      ServiceRequest[]
+  complaints           Complaint[]
+  payments             Payment[]
+  ratingsGiven         Rating[]
+  noticesPosted        Notice[]
+  selectionsMade       PoolVendorSelection[]
+
+  @@index([societyId])
+  @@index([role])
+}
+
+model Society {
+  id          String   @id @default(uuid())
+  name        String
+  address     String
+  city        String
+  totalFlats  Int      @default(0)
+  adminId     String?  @unique
+  createdAt   DateTime @default(now())
+
+  admin           User?            @relation("SocietyAdmin", fields: [adminId], references: [id])
+  members         User[]           @relation("SocietyMembers")
+  serviceRequests ServiceRequest[]
+  servicePools    ServicePool[]
+  complaints      Complaint[]
+  notices         Notice[]
+  payments        Payment[]
+  documents       Document[]
+}
+
+model ServiceCategory {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  icon        String?  // icon name identifier e.g. "air-vent", "wrench", "zap"
+  marketPrice Float    @default(0.0) // individual market benchmark price for savings calculation
+
+  serviceRequests ServiceRequest[]
+  servicePools    ServicePool[]
+}
+
+model ServiceRequest {
+  id            String    @id @default(uuid())
+  residentId    String
+  societyId     String
+  categoryId    String
+  description   String
+  preferredDate DateTime?
+  urgency       String    @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
+  status        String    @default("RAISED") // RAISED, POOLED, ASSIGNED, IN_PROGRESS, COMPLETED, RATED
+  poolId        String?
+  createdAt     DateTime  @default(now())
+
+  resident User            @relation(fields: [residentId], references: [id])
+  society  Society         @relation(fields: [societyId], references: [id])
+  category ServiceCategory @relation(fields: [categoryId], references: [id])
+  pool     ServicePool?    @relation(fields: [poolId], references: [id])
+  rating   Rating?
+
+  @@index([societyId])
+  @@index([poolId])
+  @@index([status])
+}
+
+model ServicePool {
+  id         String    @id @default(uuid())
+  societyId  String
+  categoryId String
+  status     String    @default("OPEN") // OPEN, QUOTING, ASSIGNED, COMPLETED
+  cycleStart DateTime  @default(now())
+  cycleEnd   DateTime
+  createdAt  DateTime  @default(now())
+
+  society         Society               @relation(fields: [societyId], references: [id])
+  category        ServiceCategory       @relation(fields: [categoryId], references: [id])
+  requests        ServiceRequest[]
+  invitations     VendorInvitation[]
+  quotations      Quotation[]
+  vendorSelection PoolVendorSelection?
+
+  @@index([societyId])
+  @@index([categoryId])
+  @@index([status])
+}
+
+model Vendor {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  businessName       String
+  servicesOffered    String   // Comma separated category names or JSON
+  verificationStatus String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  avgRating          Float    @default(0.0)
+  totalRatingsCount  Int      @default(0)
+  serviceArea        String
+  createdAt          DateTime @default(now())
+
+  user        User                  @relation(fields: [userId], references: [id])
+  invitations VendorInvitation[]
+  quotations  Quotation[]
+  selections  PoolVendorSelection[]
+  ratings     Rating[]
+}
+
+model VendorInvitation {
+  id        String   @id @default(uuid())
+  poolId    String
+  vendorId  String
+  status    String   @default("INVITED") // INVITED, QUOTED, DECLINED
+  invitedAt DateTime @default(now())
+
+  pool   ServicePool @relation(fields: [poolId], references: [id])
+  vendor Vendor      @relation(fields: [vendorId], references: [id])
+
+  @@unique([poolId, vendorId])
+}
+
+model Quotation {
+  id           String   @id @default(uuid())
+  poolId       String
+  vendorId     String
+  pricePerUnit Float
+  totalEstimate Float
+  terms        String?
+  availability String?
+  submittedAt  DateTime @default(now())
+
+  pool   ServicePool @relation(fields: [poolId], references: [id])
+  vendor Vendor      @relation(fields: [vendorId], references: [id])
+
+  @@index([poolId])
+  @@index([vendorId])
+}
+
+model PoolVendorSelection {
+  id               String   @id @default(uuid())
+  poolId           String   @unique
+  selectedVendorId String
+  selectedBy       String
+  selectedAt       DateTime @default(now())
+
+  pool           ServicePool @relation(fields: [poolId], references: [id])
+  selectedVendor Vendor      @relation(fields: [selectedVendorId], references: [id])
+  admin          User        @relation(fields: [selectedBy], references: [id])
+}
+
+model Complaint {
+  id            String    @id @default(uuid())
+  residentId    String
+  societyId     String
+  category      String
+  description   String
+  attachmentUrl String?
+  status        String    @default("OPEN") // OPEN, IN_REVIEW, RESOLVED, CLOSED
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+
+  resident User    @relation(fields: [residentId], references: [id])
+  society  Society @relation(fields: [societyId], references: [id])
+
+  @@index([societyId])
+  @@index([status])
+}
+
+model Notice {
+  id        String   @id @default(uuid())
+  societyId String
+  postedBy  String
+  title     String
+  content   String
+  category  String   @default("GENERAL") // GENERAL, MAINTENANCE, WATER, POWER, EVENT
+  createdAt DateTime @default(now())
+
+  society Society @relation(fields: [societyId], references: [id])
+  admin   User    @relation(fields: [postedBy], references: [id])
+
+  @@index([societyId])
+}
+
+model Payment {
+  id          String    @id @default(uuid())
+  residentId  String
+  societyId   String
+  amount      Float
+  month       String    // e.g. "September 2026"
+  status      String    @default("PENDING") // PAID, PENDING, OVERDUE
+  paymentDate DateTime?
+  receiptUrl  String?
+  createdAt   DateTime  @default(now())
+
+  resident User    @relation(fields: [residentId], references: [id])
+  society  Society @relation(fields: [societyId], references: [id])
+
+  @@index([societyId])
+  @@index([residentId])
+}
+
+model Rating {
+  id               String   @id @default(uuid())
+  serviceRequestId String   @unique
+  vendorId         String
+  residentId       String
+  rating           Int      // 1 to 5
+  comment          String?
+  createdAt        DateTime @default(now())
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+  vendor         Vendor         @relation(fields: [vendorId], references: [id])
+  resident       User           @relation(fields: [residentId], references: [id])
+
+  @@index([vendorId])
+}
+
+model Document {
+  id         String   @id @default(uuid())
+  societyId  String
+  title      String
+  fileUrl    String
+  uploadedBy String
+  category   String   @default("BYLAWS") // BYLAWS, MINUTES, NOTICE_ARCHIVE, FINANCIAL
+  uploadedAt DateTime @default(now())
+
+  society Society @relation(fields: [societyId], references: [id])
+
+  @@index([societyId])
+}
